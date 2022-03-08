@@ -1,0 +1,5 @@
+watchdog
+spacy==2.0.18
+allennlp==0.8.2
+behave==1.2.5
+nltk==3.4

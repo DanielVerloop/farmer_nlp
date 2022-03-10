@@ -112,6 +112,7 @@ def generate(sentence):
 
         # extract object, class and attribute names - global to be able to access for next steps as well
         global attribute_version, class_version, class_name
+        print(f"attribute_version: {attribute_version}, class_v: {class_version}, class_name: {class_name}")
 
         if len(nouns) > 0:
             class_name = nouns[0]
@@ -124,6 +125,7 @@ def generate(sentence):
             attribute_version = class_name
             class_version = class_name.capitalize()
 
+        print(f"attribute_version: {attribute_version}, class_v: {class_version}, class_name: {class_name}")
         # output to file
         f.write("    context." + attribute_version + " = " + class_version + "(")
 
@@ -255,7 +257,7 @@ def generate(sentence):
                     function_arguments += quote + ", "
 
             # create output
-
+            # TODO: change this with own component
             f.write("@when('" + printable_sentence + "') \n")
             if len(function_arguments) > 2:
                 f.write("def step_impl(context, " + function_arguments[:-2] + "): \n")

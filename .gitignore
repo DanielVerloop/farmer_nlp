@@ -6,3 +6,7 @@ Generate/Banking/__pycache__/
 Generate/Banking/features/steps/__pycache__/
 
 Generate/Banking/src/__pycache__/
+
+Generate/generated_steps.py
+
+Generate/generated_code/

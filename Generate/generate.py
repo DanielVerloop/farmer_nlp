@@ -1,5 +1,7 @@
+import os
 import nltk
 import re
+import json
 from projects import paths
 from parse import process_file
 from allennlp_models import pretrained
@@ -54,23 +56,16 @@ class_name = ""
 attribute_version = ""
 class_version = ""
 
-# create file
-f = open("generated_steps.py", "a+")
-f.write("from behave import * \n")
-f.write("\n")
-
-
 # generate test cases and append them to the file
-def generate(sentence):
+def generate(sentence, jsonObject):
     global f
     pos_tags = get_pos(sentence)
 
-    code = ""
-
-    context = []
-
     printable_sentence = sentence
 
+    givenJSON = [] if jsonObject['scenarios']['given'] == {} else jsonObject['scenarios']['given']
+    whenJSON = [] if jsonObject['scenarios']['when'] == {} else jsonObject['scenarios']['when']
+    thenJSON = [] if jsonObject['scenarios']['then'] == {} else jsonObject['scenarios']['then']
     # Given step
 
     if "Given" in sentence:
@@ -109,6 +104,10 @@ def generate(sentence):
         # start output
         f.write("@given('" + printable_sentence + "') \n")
         f.write("def step_impl(context): \n")
+
+        # put analysis into json object
+        givenJSON.append({"description": printable_sentence, "analysis": [pos_tags]})
+
 
         # extract object, class and attribute names - global to be able to access for next steps as well
         global attribute_version, class_version, class_name
@@ -160,6 +159,8 @@ def generate(sentence):
             else:
                 f.write(")\n")
         f.write("\n")
+
+
 
     # When step
 
@@ -257,6 +258,7 @@ def generate(sentence):
                     function_arguments += quote + ", "
 
             # create output
+            whenJSON.append({"description": printable_sentence, "analysis": [pos_tags, [verb, description]]})
             # TODO: change this with own component
             f.write("@when('" + printable_sentence + "') \n")
             if len(function_arguments) > 2:
@@ -306,6 +308,11 @@ def generate(sentence):
         # handle quoted values
         quotes = get_quoted(sentence)
 
+        srl_sentence = predictor.predict(
+            sentence=sentence
+        )
+
+
         for quote in quotes:
             if '>' in quote:
                 quote = quote.replace('>', '').replace('<', '')
@@ -317,9 +324,6 @@ def generate(sentence):
         if len(number_values) == 0:
 
             # create semantic role labeling format
-            srl_sentence = predictor.predict(
-                sentence=sentence
-            )
 
             if len(srl_sentence['verbs']) > 0:
 
@@ -354,8 +358,10 @@ def generate(sentence):
 
                 f.write("@then('" + printable_sentence + "') \n")
 
-                # create list of function arguments, including information from srl arguments and quoted values
+                # Add analysis to json
+                thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence]})
 
+                # create list of function arguments, including information from srl arguments and quoted values
                 function_arguments = ""
                 for val in arguments:
                     if val.strip() != attribute_version and '"' not in val and val.strip().isdigit() is not True:
@@ -387,6 +393,7 @@ def generate(sentence):
                         break
 
                 # output to steps.py file
+                # TODO: replace by own component
                 f.write(
                     "    assert context." + attribute_version + "." + comparison_attribute + " == " + comparison_value + "\n")
 
@@ -421,8 +428,10 @@ def generate(sentence):
                 if noun != attribute_version and noun != comparison_value:
                     comparison_attribute = noun
 
+            # Add analysis to json
+            thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence["verbs"]]})
             # output to steps.py file
-
+            # TODO: replace by own component
             f.write("@then('" + printable_sentence + "') \n")
             f.write("def step_impl(context): \n")
             f.write(
@@ -431,43 +440,65 @@ def generate(sentence):
             f.write("\n")
 
     print("Done!")
+    jsonObject["scenarios"]["given"] = givenJSON
+    jsonObject["scenarios"]["when"] = whenJSON
+    jsonObject["scenarios"]["then"] = thenJSON
+    return jsonObject
 
 
 # generate tests for project
-# path = path to gherkin file 
+# path = path to gherkin file
+# TODO: add support for multiple files to be processed at once
 def generate_for_project(path):
+    print(os.path.basename(path))
+    completeNLP2JSON = { # Dictionary to hold JSON data for output of NLP processing of all feature files
+        "files": []
+    }
+    file2JSON = { # Dictionary to hold NLP processing results of 1 file
+            "name": os.path.basename(path),
+            "scenarios": {
+                "given": {},
+                "when": {},
+                "then": {}
+            }
+        }
+
+
+    # parse Gherkin scenarios
     documents = process_file(path)
-    class_name = "insert_class_name"
-    attribute_version = "insert_attribute_version"
-    class_version = "insert_class_version"
-
-    # create file
-    f = open("features/steps/steps.py", "a+")
-
-    f.write("from behave import * \n")
-
-    f.write("\n")
 
     for doc in documents:
-        generate(doc)
+        file2JSON = generate(doc, file2JSON)
 
+    completeNLP2JSON["files"].append(file2JSON)
+    # dump result to json file
+    with open("nlp_results.json", "w") as write_file:
+        json.dump(completeNLP2JSON, write_file, indent=2)
 
-# generate tests for projects in the given paths - used for the experiments
 for i in range(0, len(paths)):
-
-    documents = process_file(paths[i])
-
-    class_name = "insert_class_name"
-    attribute_version = "insert_attribute_version"
-    class_version = "insert_class_version"
-
-    # create file
-    # if exists, appends existing file
     f = open("generated_code/generated_steps_" + str(i) + ".py", "a+")
-
     f.write("from behave import * \n")
-
     f.write("\n")
 
-    for doc in documents:
-        generate(doc)
+    generate_for_project(paths[i])
+# # generate tests for projects in the given paths - used for the experiments
+# for i in range(0, len(paths)):
+#
+#     documents = process_file(paths[i])
+#
+#     class_name = "insert_class_name"
+#     attribute_version = "insert_attribute_version"
+#     class_version = "insert_class_version"
+#
+#     # create file
+#     # if exists, appends existing file
+#     # TODO: look for a way to add imports in a better manner
+#     #  generally improve the code generation with its own component
+#     f = open("generated_code/generated_steps_" + str(i) + ".py", "a+")
+#
+#     f.write("from behave import * \n")
+#
+#     f.write("\n")
+#
+#     for doc in documents:
+#         generate(doc)

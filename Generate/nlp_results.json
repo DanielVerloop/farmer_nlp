@@ -1,0 +1,461 @@
+{
+  "files": [
+    {
+      "name": "transactions.feature",
+      "scenarios": {
+        "given": [
+          {
+            "description": "Given a bank account with initial balance of 0",
+            "analysis": [
+              [
+                [
+                  "Given",
+                  "VBN"
+                ],
+                [
+                  "a",
+                  "DT"
+                ],
+                [
+                  "bank",
+                  "NN"
+                ],
+                [
+                  "account",
+                  "NN"
+                ],
+                [
+                  "with",
+                  "IN"
+                ],
+                [
+                  "initial",
+                  "JJ"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "of",
+                  "IN"
+                ],
+                [
+                  "0",
+                  "CD"
+                ]
+              ]
+            ]
+          },
+          {
+            "description": "Given a bank account with initial balance of 1000",
+            "analysis": [
+              [
+                [
+                  "Given",
+                  "VBN"
+                ],
+                [
+                  "a",
+                  "DT"
+                ],
+                [
+                  "bank",
+                  "NN"
+                ],
+                [
+                  "account",
+                  "NN"
+                ],
+                [
+                  "with",
+                  "IN"
+                ],
+                [
+                  "initial",
+                  "JJ"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "of",
+                  "IN"
+                ],
+                [
+                  "1000",
+                  "CD"
+                ]
+              ]
+            ]
+          },
+          {
+            "description": "Given a bank account with balance of 100",
+            "analysis": [
+              [
+                [
+                  "Given",
+                  "VBN"
+                ],
+                [
+                  "a",
+                  "DT"
+                ],
+                [
+                  "bank",
+                  "NN"
+                ],
+                [
+                  "account",
+                  "NN"
+                ],
+                [
+                  "with",
+                  "IN"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "of",
+                  "IN"
+                ],
+                [
+                  "100",
+                  "CD"
+                ]
+              ]
+            ]
+          }
+        ],
+        "when": [
+          {
+            "description": "When we deposit 100 pounds into the account",
+            "analysis": [
+              [
+                [
+                  "When",
+                  "WRB"
+                ],
+                [
+                  "we",
+                  "PRP"
+                ],
+                [
+                  "deposit",
+                  "VBP"
+                ],
+                [
+                  "100",
+                  "CD"
+                ],
+                [
+                  "pounds",
+                  "NNS"
+                ],
+                [
+                  "into",
+                  "IN"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "account",
+                  "NN"
+                ]
+              ],
+              [
+                "deposit",
+                [
+                  "ARGM-TMP: When",
+                  " ARG0: we",
+                  " V: deposit",
+                  " ARG1: 100 pounds",
+                  " ARG2: into the account",
+                  ""
+                ]
+              ]
+            ]
+          },
+          {
+            "description": "When we withdraw 100 pounds from the account",
+            "analysis": [
+              [
+                [
+                  "When",
+                  "WRB"
+                ],
+                [
+                  "we",
+                  "PRP"
+                ],
+                [
+                  "withdraw",
+                  "VBP"
+                ],
+                [
+                  "100",
+                  "CD"
+                ],
+                [
+                  "pounds",
+                  "NNS"
+                ],
+                [
+                  "from",
+                  "IN"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "account",
+                  "NN"
+                ]
+              ],
+              [
+                "withdraw",
+                [
+                  "ARGM-TMP: When",
+                  " ARG0: we",
+                  " V: withdraw",
+                  " ARG1: 100 pounds",
+                  " ARG2: from the account",
+                  ""
+                ]
+              ]
+            ]
+          },
+          {
+            "description": "When we deposit 20 pounds into the account",
+            "analysis": [
+              [
+                [
+                  "When",
+                  "WRB"
+                ],
+                [
+                  "we",
+                  "PRP"
+                ],
+                [
+                  "deposit",
+                  "VBP"
+                ],
+                [
+                  "20",
+                  "CD"
+                ],
+                [
+                  "pounds",
+                  "NNS"
+                ],
+                [
+                  "into",
+                  "IN"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "account",
+                  "NN"
+                ]
+              ],
+              [
+                "deposit",
+                [
+                  "ARGM-TMP: When",
+                  " ARG0: we",
+                  " V: deposit",
+                  " ARG1: 20 pounds",
+                  " ARG2: into the account",
+                  ""
+                ]
+              ]
+            ]
+          }
+        ],
+        "then": [
+          {
+            "description": "Then the balance should be 100",
+            "analysis": [
+              [
+                [
+                  "Then",
+                  "RB"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "should",
+                  "MD"
+                ],
+                [
+                  "be",
+                  "VB"
+                ],
+                [
+                  "100",
+                  "CD"
+                ]
+              ],
+              [
+                {
+                  "verb": "should",
+                  "description": "Then the balance [V: should] be 100",
+                  "tags": [
+                    "O",
+                    "O",
+                    "O",
+                    "B-V",
+                    "O",
+                    "O"
+                  ]
+                },
+                {
+                  "verb": "be",
+                  "description": "[ARGM-TMP: Then] [ARG1: the balance] [ARGM-MOD: should] [V: be] [ARG2: 100]",
+                  "tags": [
+                    "B-ARGM-TMP",
+                    "B-ARG1",
+                    "I-ARG1",
+                    "B-ARGM-MOD",
+                    "B-V",
+                    "B-ARG2"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "description": "Then the balance should be 900",
+            "analysis": [
+              [
+                [
+                  "Then",
+                  "RB"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "should",
+                  "MD"
+                ],
+                [
+                  "be",
+                  "VB"
+                ],
+                [
+                  "900",
+                  "CD"
+                ]
+              ],
+              [
+                {
+                  "verb": "should",
+                  "description": "Then the balance [V: should] be 900",
+                  "tags": [
+                    "O",
+                    "O",
+                    "O",
+                    "B-V",
+                    "O",
+                    "O"
+                  ]
+                },
+                {
+                  "verb": "be",
+                  "description": "[ARGM-TMP: Then] [ARG1: the balance] [ARGM-MOD: should] [V: be] [ARG2: 900]",
+                  "tags": [
+                    "B-ARGM-TMP",
+                    "B-ARG1",
+                    "I-ARG1",
+                    "B-ARGM-MOD",
+                    "B-V",
+                    "B-ARG2"
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "description": "Then the balance should be 120",
+            "analysis": [
+              [
+                [
+                  "Then",
+                  "RB"
+                ],
+                [
+                  "the",
+                  "DT"
+                ],
+                [
+                  "balance",
+                  "NN"
+                ],
+                [
+                  "should",
+                  "MD"
+                ],
+                [
+                  "be",
+                  "VB"
+                ],
+                [
+                  "120",
+                  "CD"
+                ]
+              ],
+              [
+                {
+                  "verb": "should",
+                  "description": "Then the balance [V: should] be 120",
+                  "tags": [
+                    "O",
+                    "O",
+                    "O",
+                    "B-V",
+                    "O",
+                    "O"
+                  ]
+                },
+                {
+                  "verb": "be",
+                  "description": "[ARGM-TMP: Then] [ARG1: the balance] [ARGM-MOD: should] [V: be] [ARG2: 120]",
+                  "tags": [
+                    "B-ARGM-TMP",
+                    "B-ARG1",
+                    "I-ARG1",
+                    "B-ARGM-MOD",
+                    "B-V",
+                    "B-ARG2"
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

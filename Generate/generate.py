@@ -252,7 +252,8 @@ def generate(sentence, json_object):
                 #         function_arguments += quote + ", "
 
                 srl_analysis.append([verb, description])
-            whenJSON.append({"description": printable_sentence, "analysis": [info, srl_analysis]})
+
+        whenJSON.append({"description": printable_sentence, "analysis": [info, srl_analysis]})
 
         # if len(srl_sentence['verbs']) > 0:
         #
@@ -358,7 +359,6 @@ def generate(sentence, json_object):
         #     f.write("\n")
 
     # Then steps
-
     if "Then" in sentence:
 
         # extract numbers
@@ -382,123 +382,145 @@ def generate(sentence, json_object):
                 quote = '"' + quote + '"'
             quoted_values += [quote]
 
-        # if there are no numbers in the sentence
-        if len(number_values) == 0:
+        srl_analysis = []
+        info = {'nouns': nouns, 'numbers': number_values}
+        if len(verbs) > 0:
+            arguments = []
 
-            # create semantic role labeling format
+            for verb in verbs:
+                description = ""
 
-            if len(srl_sentence['verbs']) > 0:
+                # Get the label description
+                for srl in srl_sentence['verbs']:
+                    if srl['verb'] == verb:
+                        description = srl['description']
 
-                # extract description and replace useless characters
-                description = srl_sentence['verbs'][0]['description']
+                # replace useless characters
                 description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+                description = [pair.strip() for pair in description]
+                if '' in description:  # remove empty strings
+                    description.remove('')
 
-                arguments = []
+                srl_analysis.append([verb, description])
 
-                # extract useful info from arguments - nouns, compounds, etc.
-                for arg in description:
-                    value = arg.split(':')
-                    if len(value) > 1:
-                        role = value[0].strip()
-                        value = value[1]
-                        if "and" in value:
-                            multiple_values = value.split("and")
-                            for val in multiple_values:
-                                arguments += [val.strip()]
-                        # ignore useless arguments or sequences
-                        elif value.strip() not in ["I", "We", "i", "we"] and role != "ARGM-TMP" and role != "V":
-                            arguments += [
-                                value.replace("the", '').replace("a ", '').replace("should ", '').replace(" be ",
-                                                                                                          '').replace(
-                                    "is ", '')]
-
-                arguments += [
-                    description[len(description) - 1].strip().replace('"', "").replace("the", '').replace("a ",
-                                                                                                          '').replace(
-                        "should ", '').replace(" be ", '').replace("is ", '').replace("equal to", "")]
-
-                f.write("@then('" + printable_sentence + "') \n")
-
-                # Add analysis to json
-                thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence]})
-
-                # create list of function arguments, including information from srl arguments and quoted values
-                function_arguments = ""
-                for val in arguments:
-                    if val.strip() != attribute_version and '"' not in val and val.strip().isdigit() is not True:
-                        if check_noun(val) is not None:
-                            function_arguments += check_noun(val.strip()) + ", "
-                for quote in quoted_values:
-                    if '"' not in quote and quote not in function_arguments:
-                        function_arguments += quote + ", "
-                if function_arguments != "":
-                    f.write("def step_impl(context, " + function_arguments[:-2] + "): \n")
-                else:
-                    f.write("def step_impl(context): \n")
-
-                # identify comparison value for assert statement
-
-                if len(quoted_values) > 0:
-                    comparison_value = quoted_values[0]
-                else:
-                    comparison_value = arguments[len(arguments) - 1].strip()
-                    if check_noun(comparison_value) is not None:
-                        comparison_value = check_noun(comparison_value)
-                comparison_attribute = "insert_attribute_to_compare"
-
-                for arg in arguments:
-                    if attribute_version not in arg.strip() and arg.strip() != comparison_value:
-                        comparison_attribute = arg.strip()
-                        if check_noun(comparison_attribute) is not None:
-                            comparison_attribute = check_noun(comparison_attribute)
-                        break
-
-                # output to steps.py file
-                # TODO: replace by own component
-                f.write(
-                    "    assert context." + attribute_version + "." + comparison_attribute + " == " + comparison_value + "\n")
-
-                f.write("\n")
-            else:
-                f.write("@then('" + printable_sentence + "') \n")
-                f.write("def step_impl(context): \n")
-                f.write("    pass \n")
-                f.write("\n")
-
-        # if there are numbers in the sentence then focus on nouns and cardinals
-        else:
-            nouns = []
-
-            # extract nouns
-
-            for word in range(0, len(pos_tags)):
-                if pos_tags[word][1] == "NN":
-                    nouns += [pos_tags[word][0]]
-
-            # identify comparison value for assert statement
-
-            if len(number_values) > 0:
-                comparison_value = str(number_values[0])
-            elif len(quoted_values) > 0:
-                comparison_value = quoted_values[0]
-            else:
-                comparison_value = nouns[len(nouns) - 1].replace("equal to", "").strip()
-
-            comparison_attribute = "insert_attribute_to_compare"
-            for noun in nouns:
-                if noun != attribute_version and noun != comparison_value:
-                    comparison_attribute = noun
-
-            # Add analysis to json
-            thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence["verbs"]]})
-            # output to steps.py file
-            # TODO: replace by own component
-            f.write("@then('" + printable_sentence + "') \n")
-            f.write("def step_impl(context): \n")
-            f.write(
-                "    assert context." + attribute_version + "." + comparison_attribute + " == " + comparison_value + "\n")
-
-            f.write("\n")
+        thenJSON.append({"description": printable_sentence, "analysis": [info, srl_analysis]})
+        # if there are no numbers in the sentence
+        # if len(number_values) == 0:
+        #
+        #     # create semantic role labeling format
+        #
+        #     if len(srl_sentence['verbs']) > 0:
+        #
+        #         # extract description and replace useless characters
+        #         description = srl_sentence['verbs'][0]['description']
+        #         description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+        #
+        #         arguments = []
+        #
+        #         # extract useful info from arguments - nouns, compounds, etc.
+        #         for arg in description:
+        #             value = arg.split(':')
+        #             if len(value) > 1:
+        #                 role = value[0].strip()
+        #                 value = value[1]
+        #                 if "and" in value:
+        #                     multiple_values = value.split("and")
+        #                     for val in multiple_values:
+        #                         arguments += [val.strip()]
+        #                 # ignore useless arguments or sequences
+        #                 elif value.strip() not in ["I", "We", "i", "we"] and role != "ARGM-TMP" and role != "V":
+        #                     arguments += [
+        #                         value.replace("the", '').replace("a ", '').replace("should ", '').replace(" be ",
+        #                                                                                                   '').replace(
+        #                             "is ", '')]
+        #
+        #         arguments += [
+        #             description[len(description) - 1].strip().replace('"', "").replace("the", '').replace("a ",
+        #                                                                                                   '').replace(
+        #                 "should ", '').replace(" be ", '').replace("is ", '').replace("equal to", "")]
+        #
+        #         f.write("@then('" + printable_sentence + "') \n")
+        #
+        #         # Add analysis to json
+        #         thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence]})
+        #
+        #         # create list of function arguments, including information from srl arguments and quoted values
+        #         function_arguments = ""
+        #         for val in arguments:
+        #             if val.strip() != attribute_version and '"' not in val and val.strip().isdigit() is not True:
+        #                 if check_noun(val) is not None:
+        #                     function_arguments += check_noun(val.strip()) + ", "
+        #         for quote in quoted_values:
+        #             if '"' not in quote and quote not in function_arguments:
+        #                 function_arguments += quote + ", "
+        #         if function_arguments != "":
+        #             f.write("def step_impl(context, " + function_arguments[:-2] + "): \n")
+        #         else:
+        #             f.write("def step_impl(context): \n")
+        #
+        #         # identify comparison value for assert statement
+        #
+        #         if len(quoted_values) > 0:
+        #             comparison_value = quoted_values[0]
+        #         else:
+        #             comparison_value = arguments[len(arguments) - 1].strip()
+        #             if check_noun(comparison_value) is not None:
+        #                 comparison_value = check_noun(comparison_value)
+        #         comparison_attribute = "insert_attribute_to_compare"
+        #
+        #         for arg in arguments:
+        #             if attribute_version not in arg.strip() and arg.strip() != comparison_value:
+        #                 comparison_attribute = arg.strip()
+        #                 if check_noun(comparison_attribute) is not None:
+        #                     comparison_attribute = check_noun(comparison_attribute)
+        #                 break
+        #
+        #         # output to steps.py file
+        #         # TODO: replace by own component
+        #         f.write(
+        #             "    assert context." + attribute_version + "." + comparison_attribute + " == " + comparison_value + "\n")
+        #
+        #         f.write("\n")
+        #     else:
+        #         f.write("@then('" + printable_sentence + "') \n")
+        #         f.write("def step_impl(context): \n")
+        #         f.write("    pass \n")
+        #         f.write("\n")
+        #
+        # # if there are numbers in the sentence then focus on nouns and cardinals
+        # else:
+        #     nouns = []
+        #
+        #     # extract nouns
+        #
+        #     for word in range(0, len(pos_tags)):
+        #         if pos_tags[word][1] == "NN":
+        #             nouns += [pos_tags[word][0]]
+        #
+        #     # identify comparison value for assert statement
+        #
+        #     if len(number_values) > 0:
+        #         comparison_value = str(number_values[0])
+        #     elif len(quoted_values) > 0:
+        #         comparison_value = quoted_values[0]
+        #     else:
+        #         comparison_value = nouns[len(nouns) - 1].replace("equal to", "").strip()
+        #
+        #     comparison_attribute = "insert_attribute_to_compare"
+        #     for noun in nouns:
+        #         if noun != attribute_version and noun != comparison_value:
+        #             comparison_attribute = noun
+        #
+        #     # Add analysis to json
+        #     thenJSON.append({"description": printable_sentence, "analysis": [pos_tags, srl_sentence["verbs"]]})
+        #     # output to steps.py file
+        #     # TODO: replace by own component
+        #     f.write("@then('" + printable_sentence + "') \n")
+        #     f.write("def step_impl(context): \n")
+        #     f.write(
+        #         "    assert context." + attribute_version + "." + comparison_attribute + " == " + comparison_value + "\n")
+        #
+        #     f.write("\n")
 
     json_object["scenarios"]["given"] = givenJSON
     json_object["scenarios"]["when"] = whenJSON

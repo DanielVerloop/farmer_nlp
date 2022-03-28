@@ -63,49 +63,24 @@
           {
             "description": "When we deposit 100 pounds into the account",
             "analysis": [
+              {
+                "nouns": [
+                  "account"
+                ],
+                "numbers": [
+                  100
+                ]
+              },
               [
-                [
-                  "When",
-                  "WRB"
-                ],
-                [
-                  "we",
-                  "PRP"
-                ],
                 [
                   "deposit",
-                  "VBP"
-                ],
-                [
-                  "100",
-                  "CD"
-                ],
-                [
-                  "pounds",
-                  "NNS"
-                ],
-                [
-                  "into",
-                  "IN"
-                ],
-                [
-                  "the",
-                  "DT"
-                ],
-                [
-                  "account",
-                  "NN"
-                ]
-              ],
-              [
-                "deposit",
-                [
-                  "ARGM-TMP: When",
-                  " ARG0: we",
-                  " V: deposit",
-                  " ARG1: 100 pounds",
-                  " ARG2: into the account",
-                  ""
+                  [
+                    "ARGM-TMP: When",
+                    "ARG0: we",
+                    "V: deposit",
+                    "ARG1: 100 pounds",
+                    "ARG2: into the account"
+                  ]
                 ]
               ]
             ]
@@ -113,49 +88,24 @@
           {
             "description": "When we withdraw 100 pounds from the account",
             "analysis": [
+              {
+                "nouns": [
+                  "account"
+                ],
+                "numbers": [
+                  100
+                ]
+              },
               [
-                [
-                  "When",
-                  "WRB"
-                ],
-                [
-                  "we",
-                  "PRP"
-                ],
                 [
                   "withdraw",
-                  "VBP"
-                ],
-                [
-                  "100",
-                  "CD"
-                ],
-                [
-                  "pounds",
-                  "NNS"
-                ],
-                [
-                  "from",
-                  "IN"
-                ],
-                [
-                  "the",
-                  "DT"
-                ],
-                [
-                  "account",
-                  "NN"
-                ]
-              ],
-              [
-                "withdraw",
-                [
-                  "ARGM-TMP: When",
-                  " ARG0: we",
-                  " V: withdraw",
-                  " ARG1: 100 pounds",
-                  " ARG2: from the account",
-                  ""
+                  [
+                    "ARGM-TMP: When",
+                    "ARG0: we",
+                    "V: withdraw",
+                    "ARG1: 100 pounds",
+                    "ARG2: from the account"
+                  ]
                 ]
               ]
             ]
@@ -163,49 +113,24 @@
           {
             "description": "When we deposit 20 pounds into the account",
             "analysis": [
+              {
+                "nouns": [
+                  "account"
+                ],
+                "numbers": [
+                  20
+                ]
+              },
               [
-                [
-                  "When",
-                  "WRB"
-                ],
-                [
-                  "we",
-                  "PRP"
-                ],
                 [
                   "deposit",
-                  "VBP"
-                ],
-                [
-                  "20",
-                  "CD"
-                ],
-                [
-                  "pounds",
-                  "NNS"
-                ],
-                [
-                  "into",
-                  "IN"
-                ],
-                [
-                  "the",
-                  "DT"
-                ],
-                [
-                  "account",
-                  "NN"
-                ]
-              ],
-              [
-                "deposit",
-                [
-                  "ARGM-TMP: When",
-                  " ARG0: we",
-                  " V: deposit",
-                  " ARG1: 20 pounds",
-                  " ARG2: into the account",
-                  ""
+                  [
+                    "ARGM-TMP: When",
+                    "ARG0: we",
+                    "V: deposit",
+                    "ARG1: 20 pounds",
+                    "ARG2: into the account"
+                  ]
                 ]
               ]
             ]

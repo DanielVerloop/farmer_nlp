@@ -38,7 +38,7 @@ def check_noun(sequence):
     result = nltk.pos_tag(text)
 
     for word in result:
-        if word[1] == "NN":
+        if word[1].startswith("NN"):
             return word[0]
 
 
@@ -55,7 +55,7 @@ def extract_nouns_and_values(pos_tags):
     values = []
     for word in range(0, len(pos_tags)):
         if pos_tags[word][1] == "NN":
-            if word + 1 < len(pos_tags): #out-of-bound protection
+            if word + 1 < len(pos_tags):  # out-of-bound protection
                 if pos_tags[word + 1][1] == "NN":
                     nouns += [pos_tags[word][0] + " " + pos_tags[word + 1][0]]
                     word += 1
@@ -114,8 +114,6 @@ def generate(sentence, json_object):
 
         # extract numbers
         number = [int(s) for s in sentence.split() if s.isdigit()]
-        print(f"nouns: {nouns}")
-        print(f"numbers: {number}")
 
         # put analysis into json object
         info = {'nouns': nouns, 'numbers': number, 'parameters': values}
@@ -179,117 +177,185 @@ def generate(sentence, json_object):
         )
 
         verbs = extract_verbs(pos_tags)
-        print(verbs)
-        description = ""
-        for verb in verbs:
-            print(srl_sentence['verb'][verb])
-
-        if len(srl_sentence['verbs']) > 0:
-
-            # extract verb and description
-            verb = srl_sentence['verbs'][0]['verb']
-            description = srl_sentence['verbs'][0]['description']
-
-            print(f"verbs: {verb} or {srl_sentence['verbs']}")
+        srl_analysis = []
+        info = {'nouns': nouns, 'numbers': number_values}
+        if len(verbs) > 0:
             arguments = []
 
-            # replace useless characters
-            description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+            for verb in verbs:
+                description = ""
 
-            # go through list of arguments and extract values, nouns, compounds - basically useful info from arguments
-            for arg in description:
-                value = arg.split(':')
-                role = ""
-                if len(value) > 1:
-                    role = value[0].strip()
-                    value = value[1]
-                else:
-                    val = value[0]
-                    value = val
-                if "and" in value:
-                    multiple_values = value.split("and")
-                    for val in multiple_values:
-                        arguments += [val.strip()]
+                # Get the label description
+                for srl in srl_sentence['verbs']:
+                    if srl['verb'] == verb:
+                        description = srl['description']
 
-                # ignore arguments we don't need
-                elif len(number_values) > 0:
-                    if value.strip() not in ["I", "We", "i",
-                                             "we"] and role != "ARGM-TMP" and role != "V" and role != "ARG2":
-                        if len(value.strip().split(" ")) > 1:
-                            if check_noun(value) is not None:
-                                arguments += [check_noun(value)]
-                        else:
-                            arguments += [value.strip()]
-                else:
-                    if value.strip() not in ["I", "We", "i",
-                                             "we"] and role != "ARGM-TMP" and role != "V" and value != "":
-                        if len(value.strip().split(" ")) > 1:
-                            if check_noun(value) is not None:
-                                arguments += [check_noun(value)]
-                        else:
-                            arguments += [value.strip()]
+                # replace useless characters
+                description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+                description = [pair.strip() for pair in description]
+                if '' in description:  # remove empty strings
+                    description.remove('')
+                # go through list of arguments and extract values, nouns, compounds
+                # basically useful info from arguments
+                # for arg in description:
+                #     value = arg.split(':')
+                #     role = ""
+                #     if len(value) > 1:
+                #         role = value[0].strip()
+                #         value = value[1]
+                #     else:
+                #         val = value[0]
+                #         value = val
+                #     if "and" in value:
+                #         multiple_values = value.split("and")
+                #         for val in multiple_values:
+                #             arguments += [val.strip()]
+                #
+                #     # ignore arguments we don't need
+                #     elif len(number_values) > 0:
+                #         if value.strip() not in ["I", "We", "i",
+                #                                  "we"] and role != "ARGM-TMP" and role != "V" and role != "ARG2":
+                #             if len(value.strip().split(" ")) > 1:
+                #                 if check_noun(value) is not None:
+                #                     arguments += [check_noun(value)]
+                #             else:
+                #                 arguments += [value.strip()]
+                #     else:
+                #         if value.strip() not in ["I", "We", "i",
+                #                                  "we"] and role != "ARGM-TMP" and role != "V" and value != "":
+                #             if len(value.strip().split(" ")) > 1:
+                #                 if check_noun(value) is not None:
+                #                     arguments += [check_noun(value)]
+                #             else:
+                #                 arguments += [value.strip()]
+                #
+                # # # create list of function arguments, including information from srl arguments and quoted values
+                # function_arguments = ""
+                #
+                # for val in arguments:
+                #     if len(number_values) > 1:
+                #         if str(number_values[0]) not in val and str(number_values[1]) not in val:
+                #             function_arguments += val.strip() + ", "
+                #     elif len(number_values) > 0:
+                #         if str(number_values[0]) not in val:
+                #             function_arguments += val.strip() + ", "
+                #     else:
+                #         if val.strip().isdigit() is not True and '"' not in val and val != "":
+                #             if len(val.split(" ")) > 1:
+                #                 if check_noun(val) is not None:
+                #                     function_arguments += check_noun(val.strip()) + ", "
+                #             else:
+                #                 function_arguments += val.strip() + ", "
+                #
+                # for quote in quoted_values:
+                #     if '"' not in quote and quote not in function_arguments:
+                #         function_arguments += quote + ", "
 
-            # # create list of function arguments, including information from srl arguments and quoted values
-            function_arguments = ""
+                srl_analysis.append([verb, description])
+            whenJSON.append({"description": printable_sentence, "analysis": [info, srl_analysis]})
 
-            for val in arguments:
-                if len(number_values) > 1:
-                    if str(number_values[0]) not in val and str(number_values[1]) not in val:
-                        function_arguments += val.strip() + ", "
-                elif len(number_values) > 0:
-                    if str(number_values[0]) not in val:
-                        function_arguments += val.strip() + ", "
-                else:
-                    if val.strip().isdigit() is not True and '"' not in val and val != "":
-                        if len(val.split(" ")) > 1:
-                            if check_noun(val) is not None:
-                                function_arguments += check_noun(val.strip()) + ", "
-                        else:
-                            function_arguments += val.strip() + ", "
+        # if len(srl_sentence['verbs']) > 0:
+        #
+        #     # extract verb and description
+        #     verb = srl_sentence['verbs'][0]['verb']
+        #     description = srl_sentence['verbs'][0]['description']
+        #
+        #     # replace useless characters
+        #     description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+        #
+        #     # go through list of arguments and extract values, nouns, compounds - basically useful info from arguments
+        #     for arg in description:
+        #         value = arg.split(':')
+        #         role = ""
+        #         if len(value) > 1:
+        #             role = value[0].strip()
+        #             value = value[1]
+        #         else:
+        #             val = value[0]
+        #             value = val
+        #         if "and" in value:
+        #             multiple_values = value.split("and")
+        #             for val in multiple_values:
+        #                 arguments += [val.strip()]
+        #
+        #         # ignore arguments we don't need
+        #         elif len(number_values) > 0:
+        #             if value.strip() not in ["I", "We", "i",
+        #                                      "we"] and role != "ARGM-TMP" and role != "V" and role != "ARG2":
+        #                 if len(value.strip().split(" ")) > 1:
+        #                     if check_noun(value) is not None:
+        #                         arguments += [check_noun(value)]
+        #                 else:
+        #                     arguments += [value.strip()]
+        #         else:
+        #             if value.strip() not in ["I", "We", "i",
+        #                                      "we"] and role != "ARGM-TMP" and role != "V" and value != "":
+        #                 if len(value.strip().split(" ")) > 1:
+        #                     if check_noun(value) is not None:
+        #                         arguments += [check_noun(value)]
+        #                 else:
+        #                     arguments += [value.strip()]
+        #
+        #     # # create list of function arguments, including information from srl arguments and quoted values
+        #     function_arguments = ""
+        #
+        #     for val in arguments:
+        #         if len(number_values) > 1:
+        #             if str(number_values[0]) not in val and str(number_values[1]) not in val:
+        #                 function_arguments += val.strip() + ", "
+        #         elif len(number_values) > 0:
+        #             if str(number_values[0]) not in val:
+        #                 function_arguments += val.strip() + ", "
+        #         else:
+        #             if val.strip().isdigit() is not True and '"' not in val and val != "":
+        #                 if len(val.split(" ")) > 1:
+        #                     if check_noun(val) is not None:
+        #                         function_arguments += check_noun(val.strip()) + ", "
+        #                 else:
+        #                     function_arguments += val.strip() + ", "
+        #
+        #     for quote in quoted_values:
+        #         if '"' not in quote and quote not in function_arguments:
+        #             function_arguments += quote + ", "
+        #
+        #     print(f"args:{function_arguments}")
+        #     # create output
 
-            for quote in quoted_values:
-                if '"' not in quote and quote not in function_arguments:
-                    function_arguments += quote + ", "
-
-            print(f"args:{function_arguments}")
-            # create output
-            whenJSON.append({"description": printable_sentence, "analysis": [pos_tags, [verb, description]]})
-            # TODO: change this with own component
-            f.write("@when('" + printable_sentence + "') \n")
-            if len(function_arguments) > 2:
-                f.write("def step_impl(context, " + function_arguments[:-2] + "): \n")
-            else:
-                f.write("def step_impl(context): \n")
-            f.write("    context." + attribute_version + "." + verb + "(")
-
-            if len(number_values) == 1:
-                f.write(str(number_values[0]) + ")\n")
-            elif len(number_values) > 1:
-                for word in range(0, len(number_values) - 1):
-                    f.write(str(number_values[word]) + ",")
-                f.write(str(number_values[len(number_values) - 1]))
-                f.write(")\n")
-            elif len(quoted_values) == 1:
-                f.write(quoted_values[0] + ")\n")
-            elif len(quoted_values) > 1:
-                for word in range(0, len(quoted_values) - 1):
-                    f.write(quoted_values[word] + ",")
-                f.write(quoted_values[len(quoted_values) - 1])
-                f.write(")\n")
-            else:
-                if len(arguments) > 0:
-                    for word in range(0, len(arguments) - 1):
-                        f.write(arguments[word] + ",")
-                    f.write(arguments[len(arguments) - 1])
-                    f.write(")\n")
-                else:
-                    f.write(")\n")
-            f.write("\n")
-        else:
-            f.write("@when('" + printable_sentence + "') \n")
-            f.write("def step_impl(context): \n")
-            f.write("    pass \n")
-            f.write("\n")
+        #     f.write("@when('" + printable_sentence + "') \n")
+        #     if len(function_arguments) > 2:
+        #         f.write("def step_impl(context, " + function_arguments[:-2] + "): \n")
+        #     else:
+        #         f.write("def step_impl(context): \n")
+        #     f.write("    context." + attribute_version + "." + verb + "(")
+        #
+        #     if len(number_values) == 1:
+        #         f.write(str(number_values[0]) + ")\n")
+        #     elif len(number_values) > 1:
+        #         for word in range(0, len(number_values) - 1):
+        #             f.write(str(number_values[word]) + ",")
+        #         f.write(str(number_values[len(number_values) - 1]))
+        #         f.write(")\n")
+        #     elif len(quoted_values) == 1:
+        #         f.write(quoted_values[0] + ")\n")
+        #     elif len(quoted_values) > 1:
+        #         for word in range(0, len(quoted_values) - 1):
+        #             f.write(quoted_values[word] + ",")
+        #         f.write(quoted_values[len(quoted_values) - 1])
+        #         f.write(")\n")
+        #     else:
+        #         if len(arguments) > 0:
+        #             for word in range(0, len(arguments) - 1):
+        #                 f.write(arguments[word] + ",")
+        #             f.write(arguments[len(arguments) - 1])
+        #             f.write(")\n")
+        #         else:
+        #             f.write(")\n")
+        #     f.write("\n")
+        # else:
+        #     f.write("@when('" + printable_sentence + "') \n")
+        #     f.write("def step_impl(context): \n")
+        #     f.write("    pass \n")
+        #     f.write("\n")
 
     # Then steps
 
@@ -297,7 +363,9 @@ def generate(sentence, json_object):
 
         # extract numbers
         number_values = [int(s) for s in sentence.split() if s.isdigit()]
-
+        nouns, values = extract_nouns_and_values(pos_tags)
+        info = {'nouns': nouns, 'numbers': number_values}
+        verbs = extract_verbs(pos_tags)
         quoted_values = []
 
         # handle quoted values
@@ -306,7 +374,7 @@ def generate(sentence, json_object):
         srl_sentence = predictor.predict(
             sentence=sentence
         )
-
+        # TODO:add quotes to json
         for quote in quotes:
             if '>' in quote:
                 quote = quote.replace('>', '').replace('<', '')

@@ -10,3 +10,5 @@ Generate/Banking/src/__pycache__/
 Generate/generated_steps.py
 
 Generate/generated_code/
+
+Generate/nlp_results.json

@@ -7,126 +7,55 @@
           {
             "description": "Given a bank account with initial balance of 0",
             "analysis": [
-              [
-                [
-                  "Given",
-                  "VBN"
-                ],
-                [
-                  "a",
-                  "DT"
-                ],
-                [
-                  "bank",
-                  "NN"
-                ],
-                [
+              {
+                "nouns": [
+                  "bank account",
                   "account",
-                  "NN"
+                  "balance"
                 ],
-                [
-                  "with",
-                  "IN"
+                "numbers": [
+                  0
                 ],
-                [
-                  "initial",
-                  "JJ"
-                ],
-                [
-                  "balance",
-                  "NN"
-                ],
-                [
-                  "of",
-                  "IN"
-                ],
-                [
-                  "0",
-                  "CD"
+                "parameters": [
+                  "0"
                 ]
-              ]
+              }
             ]
           },
           {
             "description": "Given a bank account with initial balance of 1000",
             "analysis": [
-              [
-                [
-                  "Given",
-                  "VBN"
-                ],
-                [
-                  "a",
-                  "DT"
-                ],
-                [
-                  "bank",
-                  "NN"
-                ],
-                [
+              {
+                "nouns": [
+                  "bank account",
                   "account",
-                  "NN"
+                  "balance"
                 ],
-                [
-                  "with",
-                  "IN"
+                "numbers": [
+                  1000
                 ],
-                [
-                  "initial",
-                  "JJ"
-                ],
-                [
-                  "balance",
-                  "NN"
-                ],
-                [
-                  "of",
-                  "IN"
-                ],
-                [
-                  "1000",
-                  "CD"
+                "parameters": [
+                  "1000"
                 ]
-              ]
+              }
             ]
           },
           {
             "description": "Given a bank account with balance of 100",
             "analysis": [
-              [
-                [
-                  "Given",
-                  "VBN"
-                ],
-                [
-                  "a",
-                  "DT"
-                ],
-                [
-                  "bank",
-                  "NN"
-                ],
-                [
+              {
+                "nouns": [
+                  "bank account",
                   "account",
-                  "NN"
+                  "balance"
                 ],
-                [
-                  "with",
-                  "IN"
+                "numbers": [
+                  100
                 ],
-                [
-                  "balance",
-                  "NN"
-                ],
-                [
-                  "of",
-                  "IN"
-                ],
-                [
-                  "100",
-                  "CD"
+                "parameters": [
+                  "100"
                 ]
-              ]
+              }
             ]
           }
         ],

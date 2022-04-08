@@ -6,12 +6,14 @@ from projects import paths
 from parse import process_file
 from allennlp_models import pretrained
 
+# required for tokenization
+nltk.download('punkt')
 # download the nltk pos-tagger
 nltk.download('averaged_perceptron_tagger')
 
+
 # import allennlp srl model
 predictor = pretrained.load_predictor("structured-prediction-srl-bert")
-
 
 # extract list of quoted values from a string
 def get_quoted(sentence):
@@ -68,7 +70,7 @@ def extract_nouns_and_values(pos_tags):
     if (pos_tags[len(pos_tags) - 1][1] == "NN") and pos_tags[len(pos_tags) - 1][0] not in nouns:
         nouns += [pos_tags[len(pos_tags) - 1][0]]
 
-    return nouns, values
+    return nouns #, values
 
 
 def extract_verbs(pos_tags):
@@ -79,25 +81,44 @@ def extract_verbs(pos_tags):
     return verbs
 
 
-# global variables for object, class and attribute names
-
-class_name = ""
-attribute_version = ""
-class_version = ""
-
-
 # generate test cases and append them to the file
+def extract_params(printable_sentence):
+    params = []
+    # no datatables are present
+    if "<" and ">" not in printable_sentence:
+        return None, printable_sentence
+
+    words = printable_sentence.strip().split(' ')
+    for i in range(0, len(words)):
+        if words[i].startswith('<') and words[i].endswith('>'):
+            words[i] = words[i].replace('>', '').replace('<', '')
+            params.append(words[i])
+    sentence = ' '.join(words)
+
+    return params, sentence
+
+
 def generate(sentence, json_object):
-    global f
-    pos_tags = get_pos(sentence)
-
-    printable_sentence = sentence
-
+    #JSON data structures
     givenJSON = {} if json_object['given'] == {} else json_object['given']
     whenJSON = {} if json_object['when'] == {} else json_object['when']
     thenJSON = {} if json_object['then'] == {} else json_object['then']
-    # Given step
+    # And steps
+    gAndJSON = [] if json_object['gAnd'] == [] else json_object['gAnd']
+    wAndJSON = [] if json_object['wAnd'] == [] else json_object['wAnd']
+    tAndJSON = [] if json_object['tAnd'] == [] else json_object['tAnd']
 
+    # extract table values first (between < & >) and clean the sentence
+    # then use the pos-tagger
+    parameters, cleaned_sentence = extract_params(sentence)
+    if parameters is None:
+        parameters = []
+    pos_tags = get_pos(cleaned_sentence)
+
+    # extract nouns and cardinals
+    nouns = extract_nouns_and_values(pos_tags)
+
+    # Given step
     if "Given" in sentence:
         quoted_values = []
         quotes = get_quoted(sentence)
@@ -109,24 +130,19 @@ def generate(sentence, json_object):
                 quote = '"' + quote + '"'
             quoted_values += [quote]
 
-        # extract nouns and cardinals
-        nouns, values = extract_nouns_and_values(pos_tags)
-
         # extract numbers
         number = [int(s) for s in sentence.split() if s.isdigit()]
 
         # put analysis into json object
-        info = {'nouns': nouns, 'numbers': number, 'parameters': values}
-        givenJSON = {"description": printable_sentence, "analysis": [info]}
+        info = {'nouns': nouns, 'numbers': number, 'parameters': parameters}
+        givenJSON = {"description": cleaned_sentence, "analysis": [info]}
 
     # When step
     if "When" in sentence:
-
         # extract numbers
         number_values = [int(s) for s in sentence.split() if s.isdigit()]
-        nouns, values = extract_nouns_and_values(pos_tags)
 
-        # TODO: extract and handle quoted values
+        # TODO: use values and parameters to make possible param list
         quoted_values = []
         quotes = get_quoted(sentence)
         for quote in quotes:
@@ -143,7 +159,7 @@ def generate(sentence, json_object):
 
         verbs = extract_verbs(pos_tags)
         srl_analysis = []
-        info = {'nouns': nouns, 'numbers': number_values}
+        info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
         if len(verbs) > 0:
             arguments = []
 
@@ -218,17 +234,17 @@ def generate(sentence, json_object):
 
                 srl_analysis.append([verb, description])
 
-        whenJSON = {"description": printable_sentence, "analysis": [info, srl_analysis]}
+        whenJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
 
     # Then steps
     if "Then" in sentence:
 
         # extract numbers
         number_values = [int(s) for s in sentence.split() if s.isdigit()]
-        nouns, values = extract_nouns_and_values(pos_tags)
-        info = {'nouns': nouns, 'numbers': number_values}
         verbs = extract_verbs(pos_tags)
         quoted_values = []
+
+        info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
 
         # handle quoted values
         quotes = get_quoted(sentence)
@@ -245,7 +261,6 @@ def generate(sentence, json_object):
             quoted_values += [quote]
 
         srl_analysis = []
-        info = {'nouns': nouns, 'numbers': number_values}
         if len(verbs) > 0:
             arguments = []
 
@@ -265,7 +280,61 @@ def generate(sentence, json_object):
 
                 srl_analysis.append([verb, description])
 
-        thenJSON = {"description": printable_sentence, "analysis": [info, srl_analysis]}
+        thenJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
+
+    # And steps
+    if "And" in sentence:
+        # extract numbers
+        number_values = [int(s) for s in sentence.split() if s.isdigit()]
+
+        info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
+
+        verbs = extract_verbs(pos_tags)
+        quoted_values = []
+
+        # handle quoted values
+        quotes = get_quoted(sentence)
+
+        srl_sentence = predictor.predict(
+            sentence=sentence
+        )
+        # TODO:add quotes to json
+        for quote in quotes:
+            if '>' in quote:
+                quote = quote.replace('>', '').replace('<', '')
+            elif len(quote) > 1 and quote.isdigit() is not True:
+                quote = '"' + quote + '"'
+            quoted_values += [quote]
+
+        srl_analysis = []
+        if len(verbs) > 0:
+            arguments = []
+
+            for verb in verbs:
+                description = ""
+
+                # Get the label description
+                for srl in srl_sentence['verbs']:
+                    if srl['verb'] == verb:
+                        description = srl['description']
+
+                # replace useless characters
+                description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+                description = [pair.strip() for pair in description]
+                if '' in description:  # remove empty strings
+                    description.remove('')
+
+                srl_analysis.append([verb, description])
+
+        andJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
+
+        # add the result to the correct type
+        if givenJSON != {} and (whenJSON == {} and thenJSON == {}):
+            json_object["gAnd"].append(andJSON)
+        if whenJSON != {} and thenJSON == {}:
+            json_object["wAnd"].append(andJSON)
+        if thenJSON != {}:
+            json_object["tAnd"].append(andJSON)
 
     json_object["given"] = givenJSON
     json_object["when"] = whenJSON
@@ -276,50 +345,58 @@ def generate(sentence, json_object):
 # generate tests for project
 # path = path to gherkin file
 # TODO: add support for multiple files to be processed at once
-def generate_for_project(path):
-    print(os.path.basename(path))
+def generate_for_project(paths):
     completeNLP2JSON = {  # Dictionary to hold JSON data for output of NLP processing of all feature files
         "files": []
     }
-    file2JSON = {  # Dictionary to hold NLP processing results of 1 file
-        "name": os.path.basename(path),
-        "scenarios": []
-    }
+    files = []
+    for path in paths:
+        print(os.path.basename(path))
 
-
-    # parse Gherkin scenarios
-    documents = process_file(path)
-    grouped_docs = []
-    scenario = []
-    for doc in documents:
-        if (not scenario == []) and doc.startswith("Given"):
-            grouped_docs.append(scenario)
-            scenario = []
-        scenario.append(doc)
-    grouped_docs.append(scenario) #add last scenario to grouped
-
-    for group in grouped_docs:
-        # for reference
-        scenario2JSON = {
-            "given": {},
-            "gAnd": [],
-            "when": {},
-            "wAnd": [],
-            "then": {},
-            "tAnd": [],
+        file2JSON = {  # Dictionary to hold NLP processing results of 1 file
+            "name": os.path.basename(path),
+            "scenarios": []
         }
-        result = [] if file2JSON['scenarios'] == [] else file2JSON['scenarios']
-        for step in group:
-            scenario2JSON = generate(step, scenario2JSON)
-        result.append(scenario2JSON)
-        file2JSON["scenarios"] = result
 
-    completeNLP2JSON["files"].append(file2JSON)
+        # parse Gherkin scenarios
+
+        documents = process_file(path)
+        grouped_docs = []
+        scenario = []
+        for doc in documents:
+            if (not scenario == []) and doc.startswith("Given"):
+                grouped_docs.append(scenario)
+                scenario = []
+            scenario.append(doc)
+        grouped_docs.append(scenario)  # add last scenario to grouped
+
+        # process scenarios
+        for group in grouped_docs:
+            # for reference
+            scenario2JSON = {
+                "given": {},
+                "gAnd": [],
+                "when": {},
+                "wAnd": [],
+                "then": {},
+                "tAnd": [],
+            }
+            result = [] if file2JSON['scenarios'] == [] else file2JSON['scenarios']
+            for step in group:
+                scenario2JSON = generate(step, scenario2JSON)
+            result.append(scenario2JSON)
+            file2JSON["scenarios"] = result
+
+        # add a processed file to list
+        files.append(file2JSON)
+
+    # complete the json object
+    completeNLP2JSON["files"] = files
+
     # dump result to json file
     with open("nlp_results.json", "w") as write_file:
         json.dump(completeNLP2JSON, write_file, indent=2)
 
 
-for i in range(0, len(paths)):
-    generate_for_project(paths[i])
-
+generate_for_project(paths)
+# # print(process_file(paths[1]))

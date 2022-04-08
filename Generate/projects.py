@@ -1,4 +1,5 @@
-paths = ["Banking/features/transactions.feature"]
+paths = ["Banking/features/transactions.feature",
+         "Banking/features/vendingMachine.feature"]
 # paths = ["/home/ruxi/experiment_repos/59_effetctive/behave_bdd/cal_c_1.feature",
 # "/home/ruxi/experiment_repos/behave/features/feat_6.feature",
 # #"/home/ruxi/experiment_repos/behave-demo/features/attack-sql.feature",

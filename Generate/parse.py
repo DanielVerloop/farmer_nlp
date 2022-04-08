@@ -1,6 +1,3 @@
-
-
-
 # get a list of sentences in a paragraph
 def get_paragraph(paragraph):
     paragraph_sentences = {}
@@ -8,6 +5,8 @@ def get_paragraph(paragraph):
     sentences = paragraph.split("\n")
 
     scenario = sentences[0].strip()
+    if '@' in scenario:
+        sentences = sentences[1:]
     steps = []
 
     for i in range(1, len(sentences)):
@@ -37,6 +36,11 @@ def process_file(path):
         first_word = tempo.split(":")
         if first_word[0].strip() == "Scenario" or first_word[0].strip() == "Scenario Outline":
             paragraphs += [paragraph]
+        splitcheck = first_word[0].strip().split("\n")
+        if '@' in splitcheck[0].strip(): #check if starts with a tag
+            if splitcheck[1].strip() == "Scenario" or splitcheck[1].strip() == "Scenario Outline":
+                paragraphs += [paragraph]
+
 
     documents = []
 

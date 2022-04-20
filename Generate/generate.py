@@ -1,16 +1,18 @@
 import os
 import nltk
+from nltk import PorterStemmer
 import re
 import json
 from projects import paths
 from parse import process_file
 from allennlp_models import pretrained
+import stanfordnlp
 
-# required for tokenization
-nltk.download('punkt')
 # download the nltk pos-tagger
 nltk.download('averaged_perceptron_tagger')
-
+ps = PorterStemmer()
+# backup standford pos-tagger
+nlp = stanfordnlp.Pipeline(lang='en', processors='tokenize,pos')
 
 # import allennlp srl model
 predictor = pretrained.load_predictor("structured-prediction-srl-bert")
@@ -51,14 +53,18 @@ def get_pos(sentence):
 
     return result
 
+def get_stanford_pos(sentence):
+    tagger = nlp(sentence)
+    result = [(word.text, word.pos) for word in tagger.sentences[0].words]
+    return result
 
 def extract_nouns_and_values(pos_tags):
     nouns = []
     values = []
     for word in range(0, len(pos_tags)):
-        if pos_tags[word][1] == "NN":
+        if pos_tags[word][1].startswith("NN"):
             if word + 1 < len(pos_tags):  # out-of-bound protection
-                if pos_tags[word + 1][1] == "NN":
+                if pos_tags[word + 1][1].startswith("NN"):
                     nouns += [pos_tags[word][0] + " " + pos_tags[word + 1][0]]
                     word += 1
                 else:
@@ -75,10 +81,13 @@ def extract_nouns_and_values(pos_tags):
 
 def extract_verbs(pos_tags):
     verbs = []
+    stemmed = []
     for word in range(0, len(pos_tags)):
         if pos_tags[word][1].startswith('VB'):
             verbs += [pos_tags[word][0]]
-    return verbs
+            stemmed += [ps.stem(pos_tags[word][0])]
+
+    return verbs, stemmed
 
 
 # generate test cases and append them to the file
@@ -98,6 +107,15 @@ def extract_params(printable_sentence):
     return params, sentence
 
 
+def clean_verbs(verbs, stemmed, parameters):
+    for i in range(0, len(verbs)):
+        if verbs[i] in parameters:
+            del verbs[i]
+            del stemmed[i]
+
+    return verbs, stemmed
+
+
 def generate(sentence, json_object):
     #JSON data structures
     givenJSON = {} if json_object['given'] == {} else json_object['given']
@@ -114,6 +132,12 @@ def generate(sentence, json_object):
     if parameters is None:
         parameters = []
     pos_tags = get_pos(cleaned_sentence)
+
+    verbs, stemmed_verbs = extract_verbs(pos_tags)
+    if verbs == []:
+        verbs, stemmed_verbs = extract_verbs(get_stanford_pos(sentence))
+
+    cleaned_verbs, stemmed_verbs = clean_verbs(verbs, stemmed_verbs, parameters)
 
     # extract nouns and cardinals
     nouns = extract_nouns_and_values(pos_tags)
@@ -157,82 +181,8 @@ def generate(sentence, json_object):
             sentence=sentence
         )
 
-        verbs = extract_verbs(pos_tags)
-        srl_analysis = []
+        srl_analysis = get_srl(srl_sentence, stemmed_verbs, cleaned_verbs)
         info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
-        if len(verbs) > 0:
-            arguments = []
-
-            for verb in verbs:
-                description = ""
-
-                # Get the label description
-                for srl in srl_sentence['verbs']:
-                    if srl['verb'] == verb:
-                        description = srl['description']
-
-                # replace useless characters
-                description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
-                description = [pair.strip() for pair in description]
-                if '' in description:  # remove empty strings
-                    description.remove('')
-                # go through list of arguments and extract values, nouns, compounds
-                # basically useful info from arguments
-                # for arg in description:
-                #     value = arg.split(':')
-                #     role = ""
-                #     if len(value) > 1:
-                #         role = value[0].strip()
-                #         value = value[1]
-                #     else:
-                #         val = value[0]
-                #         value = val
-                #     if "and" in value:
-                #         multiple_values = value.split("and")
-                #         for val in multiple_values:
-                #             arguments += [val.strip()]
-                #
-                #     # ignore arguments we don't need
-                #     elif len(number_values) > 0:
-                #         if value.strip() not in ["I", "We", "i",
-                #                                  "we"] and role != "ARGM-TMP" and role != "V" and role != "ARG2":
-                #             if len(value.strip().split(" ")) > 1:
-                #                 if check_noun(value) is not None:
-                #                     arguments += [check_noun(value)]
-                #             else:
-                #                 arguments += [value.strip()]
-                #     else:
-                #         if value.strip() not in ["I", "We", "i",
-                #                                  "we"] and role != "ARGM-TMP" and role != "V" and value != "":
-                #             if len(value.strip().split(" ")) > 1:
-                #                 if check_noun(value) is not None:
-                #                     arguments += [check_noun(value)]
-                #             else:
-                #                 arguments += [value.strip()]
-                #
-                # # # create list of function arguments, including information from srl arguments and quoted values
-                # function_arguments = ""
-                #
-                # for val in arguments:
-                #     if len(number_values) > 1:
-                #         if str(number_values[0]) not in val and str(number_values[1]) not in val:
-                #             function_arguments += val.strip() + ", "
-                #     elif len(number_values) > 0:
-                #         if str(number_values[0]) not in val:
-                #             function_arguments += val.strip() + ", "
-                #     else:
-                #         if val.strip().isdigit() is not True and '"' not in val and val != "":
-                #             if len(val.split(" ")) > 1:
-                #                 if check_noun(val) is not None:
-                #                     function_arguments += check_noun(val.strip()) + ", "
-                #             else:
-                #                 function_arguments += val.strip() + ", "
-                #
-                # for quote in quoted_values:
-                #     if '"' not in quote and quote not in function_arguments:
-                #         function_arguments += quote + ", "
-
-                srl_analysis.append([verb, description])
 
         whenJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
 
@@ -241,7 +191,7 @@ def generate(sentence, json_object):
 
         # extract numbers
         number_values = [int(s) for s in sentence.split() if s.isdigit()]
-        verbs = extract_verbs(pos_tags)
+
         quoted_values = []
 
         info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
@@ -260,25 +210,7 @@ def generate(sentence, json_object):
                 quote = '"' + quote + '"'
             quoted_values += [quote]
 
-        srl_analysis = []
-        if len(verbs) > 0:
-            arguments = []
-
-            for verb in verbs:
-                description = ""
-
-                # Get the label description
-                for srl in srl_sentence['verbs']:
-                    if srl['verb'] == verb:
-                        description = srl['description']
-
-                # replace useless characters
-                description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
-                description = [pair.strip() for pair in description]
-                if '' in description:  # remove empty strings
-                    description.remove('')
-
-                srl_analysis.append([verb, description])
+        srl_analysis = get_srl(srl_sentence, stemmed_verbs, cleaned_verbs)
 
         thenJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
 
@@ -289,8 +221,6 @@ def generate(sentence, json_object):
 
         info = {'nouns': nouns, 'numbers': number_values, 'parameters': parameters}
 
-        verbs = extract_verbs(pos_tags)
-        quoted_values = []
 
         # handle quoted values
         quotes = get_quoted(sentence)
@@ -306,40 +236,43 @@ def generate(sentence, json_object):
                 quote = '"' + quote + '"'
             quoted_values += [quote]
 
-        srl_analysis = []
-        if len(verbs) > 0:
-            arguments = []
-
-            for verb in verbs:
-                description = ""
-
-                # Get the label description
-                for srl in srl_sentence['verbs']:
-                    if srl['verb'] == verb:
-                        description = srl['description']
-
-                # replace useless characters
-                description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
-                description = [pair.strip() for pair in description]
-                if '' in description:  # remove empty strings
-                    description.remove('')
-
-                srl_analysis.append([verb, description])
-
-        andJSON = {"description": cleaned_sentence, "analysis": [info, srl_analysis]}
+        srl_analysis = get_srl(srl_sentence,stemmed_verbs, cleaned_verbs)
 
         # add the result to the correct type
         if givenJSON != {} and (whenJSON == {} and thenJSON == {}):
-            json_object["gAnd"].append(andJSON)
+            json_object["gAnd"].append({"description": cleaned_sentence, "analysis": [info, srl_analysis]})
         if whenJSON != {} and thenJSON == {}:
-            json_object["wAnd"].append(andJSON)
+            json_object["wAnd"].append({"description": cleaned_sentence, "analysis": [info, srl_analysis]})
         if thenJSON != {}:
-            json_object["tAnd"].append(andJSON)
+            json_object["tAnd"].append({"description": cleaned_sentence, "analysis": [info, srl_analysis]})
 
     json_object["given"] = givenJSON
     json_object["when"] = whenJSON
     json_object["then"] = thenJSON
     return json_object
+
+
+def get_srl(srl_sentence, stemmed,  verbs):
+    srl_analysis = []
+    if len(verbs) > 0:
+        arguments = []
+
+        for i in range(0, len(verbs)):
+            description = ""
+
+            # Get the label description
+            for srl in srl_sentence['verbs']:
+                if srl['verb'] == verbs[i]:
+                    description = srl['description']
+
+            # replace useless characters
+            description = description.replace('[', '').replace('<', '').replace('>', '').split(']')
+            description = [pair.strip() for pair in description]
+            if '' in description:  # remove empty strings
+                description.remove('')
+
+            srl_analysis.append([stemmed[i], description])
+    return srl_analysis
 
 
 # generate tests for project
